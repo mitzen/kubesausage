@@ -9,7 +9,7 @@ import (
 )
 
 // Example of use case
-// istioupgrader.exe --type=canary --version=10.20.30
+// kubesausage.exe --type=cluster --version=10.20.30
 
 func Execute() {
 
@@ -32,7 +32,7 @@ func Execute() {
 
 			fmt.Printf("%s\n", informationType)
 
-			istioUpgrader := feature.IstioUpgrade{UpgradeType: informationType,
+			istioUpgrader := feature.ClusterManager{UpgradeType: informationType,
 				Cmd: cmd}
 			istioUpgrader.Execute()
 		},

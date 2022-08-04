@@ -12,7 +12,7 @@ import (
 	"github.com/mitzen/kubeconfig/config"
 )
 
-type IstioUpgrade struct {
+type ClusterManager struct {
 	Namespace                     string
 	UpgradeType                   string
 	VersionSelected               string
@@ -21,11 +21,11 @@ type IstioUpgrade struct {
 	DryRun                        bool
 }
 
-// Running precheck test first
-// gateway + vs => no downtime migration
-// go to all namespace and check version again after drain operation
+// Get cluster cpu / memory configuration
+// Get pods memory and cpu request and limits
+// Total it all up
 
-func (i *IstioUpgrade) Execute() {
+func (i *ClusterManager) Execute() {
 
 	var dryRun bool = true
 	cfg := config.ClientConfig{}
@@ -34,13 +34,6 @@ func (i *IstioUpgrade) Execute() {
 
 	ic := util.IstioClient{}
 	ic.NewIstioClient(restConfig, apiv1.NamespaceAll)
-
-	// Precheck(ic.IstioExtendedClient, i.Namespace, i.Cmd, *cfg.Kubeconfig, "")
-
-	// Canary install?
-
-	// Post maintenance tasks
-	// using drain or ability to run rollout deployment?
 
 	istioControlVersion := ic.GetIstioControlVersion()
 	istiodVersion, err := version.NewVersion(istioControlVersion)
