@@ -3,8 +3,6 @@ package feature
 import (
 	"fmt"
 
-	"github.com/hashicorp/go-version"
-	//"github.com/mitzen/istioupgrader/pkg/kube/config"
 	"github.com/mitzen/kubesausage/pkg/kube/util"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
@@ -27,81 +25,71 @@ type ClusterManager struct {
 
 func (i *ClusterManager) Execute() {
 
-	var dryRun bool = true
 	cfg := config.ClientConfig{}
 	restConfig := cfg.NewRestConfig()
 	clientset := cfg.NewClientSet(restConfig)
 
-	ic := util.IstioClient{}
-	ic.NewIstioClient(restConfig, apiv1.NamespaceAll)
-
-	istioControlVersion := ic.GetIstioControlVersion()
-	istiodVersion, err := version.NewVersion(istioControlVersion)
-
-	if err != nil || istioControlVersion == "" {
-		fmt.Printf("Unable to get istiod version from istio-system \n")
-	}
-
 	nsutil := util.KubeObject{}
 	nsutil.NewKubeObject(clientset)
 
-	namespaces, nserr := nsutil.ListAllNamespace()
-	if nserr != nil {
-		panic("Unable to get namespace(s) from kubernetes")
-	} else {
+	nodes, err := nsutil.ListAllNodes()
 
-		var isRestartPodRequired bool = false
+	if err != nil {
+		fmt.Printf("Unable get nodes info.")
+	}
 
-		for _, n := range namespaces.Items {
+	for _, node := range nodes.Items {
 
-			fmt.Println(n.Name)
+		fmt.Printf("----------------------------------------------\n")
+		fmt.Printf("Node: %s \n", node.Name)
+		fmt.Printf("CPU: %d \n", node.Status.Capacity.Cpu().ToDec().Value())
+		fmt.Printf("Memory: %d \n", node.Status.Capacity.Memory().ToDec().Value())
+		fmt.Printf("Pods: %d \n", node.Status.Capacity.Storage().ToDec().Value())
+		fmt.Printf("----------------------------------------------\n")
 
-			if n.Name == config.IstioSystem || n.Name == config.KubeSystem {
-				continue
-			}
+		pods, err := nsutil.ListAllPods(apiv1.NamespaceAll)
+		if err != nil {
+			fmt.Printf("Unable get nodes info.")
+		}
 
-			istioPodVersion := ic.GetIstioPod(n.Name)
+		var (
+			totalMemoryRequested, totalCPURequested, totalCPULimit, totalMemoryLimit int64
+		)
 
-			if istioPodVersion != "" {
+		totalMemoryRequested = 0
+		totalCPURequested = 0
+		totalCPULimit = 0
+		totalMemoryLimit = 0
 
-				fmt.Printf("Istiond version: %s, IstioPod version:%s ", istioControlVersion, istioPodVersion)
+		for _, pod := range pods.Items {
+			if pod.Spec.NodeName == node.Name {
+				// same node //
+				fmt.Printf("Namespace: %s \n", pod.Namespace)
+				fmt.Printf("Pod name: %s \n", pod.Name)
 
-				podIstioVersion, err := version.NewVersion(istioPodVersion)
+				for _, container := range pod.Spec.Containers {
 
-				if err != nil {
-					fmt.Printf("Unable to istio version from pods")
-				} else {
+					CPURequested := container.Resources.Requests.Cpu().Value()
+					MemoryRequested := container.Resources.Requests.Memory().Value()
+					CPULimit := container.Resources.Limits.Cpu().Value()
+					MemoryLimit := container.Resources.Limits.Memory().Value()
 
-					if !istiodVersion.Equal(podIstioVersion) {
-						fmt.Printf("Istio control plane and data plan version mismatch in namespace: %s", n.Name)
-						isRestartPodRequired = true
-					} else {
-						fmt.Printf("No pods restart is required for namespace: %s", n.Name)
-					}
+					fmt.Printf("Total cpu request for container: %d \n", CPURequested)
+					fmt.Printf("Total cpu limits for container: %d \n", CPULimit)
+					fmt.Printf("Total memory request for container: %d \n", MemoryRequested)
+					fmt.Printf("Total memory limits for container: %d \n", MemoryLimit)
+
+					totalCPURequested += CPURequested
+					totalMemoryRequested += MemoryRequested
+					totalCPULimit += CPULimit
+					totalMemoryLimit += MemoryLimit
 				}
 			}
 		}
 
-		if !dryRun {
-
-			if isRestartPodRequired {
-
-				nodeLists, err := nsutil.ListAllNodes()
-
-				if err != nil {
-					fmt.Println("Error listing node.")
-				}
-
-				nc := &util.NodeClient{}
-				nc.NewNodeClient(clientset)
-
-				for _, v := range nodeLists.Items {
-
-					nc.Cordon(&v)
-					nc.DrainNode(&v)
-					nc.UnCordon(&v)
-				}
-			}
-		}
+		fmt.Printf("Total cpu request for container: %d \n", totalCPURequested)
+		fmt.Printf("Total cpu limits for container: %d \n", totalCPULimit)
+		fmt.Printf("Total memory request for container:%d \n", totalMemoryRequested)
+		fmt.Printf("Total memory limits for container:%d \n", totalMemoryLimit)
 	}
 }

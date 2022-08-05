@@ -31,6 +31,10 @@ func (nc *NodeClient) UnCordon(node *v1.Node) {
 	drain.RunCordonOrUncordon(&helper, node, false)
 }
 
+func (nc *NodeClient) GetNode(node *v1.Node) {
+
+}
+
 func (nc *NodeClient) createHelper() drain.Helper {
 
 	return drain.Helper{

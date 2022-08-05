@@ -68,6 +68,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/mitzen/kubeconfig v0.0.0-20220804065420-f2abe046d1eb // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -125,6 +126,5 @@ require (
 require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/mitzen/kubeconfig v0.0.0-20220802220712-17ce92789864
 	github.com/spf13/pflag v1.0.5 // indirect
 )
