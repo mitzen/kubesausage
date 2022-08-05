@@ -32,8 +32,7 @@ func Execute() {
 
 			fmt.Printf("%s\n", informationType)
 
-			istioUpgrader := feature.ClusterManager{UpgradeType: informationType,
-				Cmd: cmd}
+			istioUpgrader := feature.ClusterManager{Cmd: cmd}
 			istioUpgrader.Execute()
 		},
 	}

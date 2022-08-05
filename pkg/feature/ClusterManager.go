@@ -11,13 +11,13 @@ import (
 )
 
 type ClusterManager struct {
-	Namespace                     string
-	UpgradeType                   string
-	VersionSelected               string
-	isPreflightUpgradeCheckPassed bool
-	Cmd                           *cobra.Command
-	DryRun                        bool
+	Namespace string
+	Cmd       *cobra.Command
 }
+
+const (
+	unitMegabytes int64 = 1000000
+)
 
 // Get cluster cpu / memory configuration
 // Get pods memory and cpu request and limits
@@ -42,8 +42,6 @@ func (i *ClusterManager) Execute() {
 
 		fmt.Printf("----------------------------------------------\n")
 		fmt.Printf("Node: %s \n", node.Name)
-		fmt.Printf("CPU: %d \n", node.Status.Capacity.Cpu().ToDec().Value())
-		fmt.Printf("Memory: %d \n", node.Status.Capacity.Memory().ToDec().Value())
 		fmt.Printf("Pods: %d \n", node.Status.Capacity.Storage().ToDec().Value())
 		fmt.Printf("----------------------------------------------\n")
 
@@ -63,7 +61,7 @@ func (i *ClusterManager) Execute() {
 
 		for _, pod := range pods.Items {
 			if pod.Spec.NodeName == node.Name {
-				// same node //
+
 				fmt.Printf("Namespace: %s \n", pod.Namespace)
 				fmt.Printf("Pod name: %s \n", pod.Name)
 
@@ -74,10 +72,12 @@ func (i *ClusterManager) Execute() {
 					CPULimit := container.Resources.Limits.Cpu().Value()
 					MemoryLimit := container.Resources.Limits.Memory().Value()
 
-					fmt.Printf("Total cpu request for container: %d \n", CPURequested)
-					fmt.Printf("Total cpu limits for container: %d \n", CPULimit)
-					fmt.Printf("Total memory request for container: %d \n", MemoryRequested)
-					fmt.Printf("Total memory limits for container: %d \n", MemoryLimit)
+					fmt.Printf("Container Name: %s \n", container.Name)
+					fmt.Printf("Image Name: %s \n", container.Image)
+					fmt.Printf("Cpu request for container: %d \n", CPURequested)
+					fmt.Printf("Cpu limits for container: %d \n", CPULimit)
+					fmt.Printf("Memory request for container (M): %d \n", MemoryRequested/unitMegabytes)
+					fmt.Printf("Memory limits for container (M): %d \n", MemoryLimit/unitMegabytes)
 
 					totalCPURequested += CPURequested
 					totalMemoryRequested += MemoryRequested
@@ -89,7 +89,9 @@ func (i *ClusterManager) Execute() {
 
 		fmt.Printf("Total cpu request for container: %d \n", totalCPURequested)
 		fmt.Printf("Total cpu limits for container: %d \n", totalCPULimit)
-		fmt.Printf("Total memory request for container:%d \n", totalMemoryRequested)
-		fmt.Printf("Total memory limits for container:%d \n", totalMemoryLimit)
+		fmt.Printf("Total memory request for container:%d \n", totalMemoryRequested/unitMegabytes)
+		fmt.Printf("Total memory limits for container:%d \n", totalMemoryLimit/unitMegabytes)
+		fmt.Printf("Node CPU: %d \n", node.Status.Capacity.Cpu().ToDec().Value())
+		fmt.Printf("Node Memory: %d \n", node.Status.Capacity.Memory().ToDec().Value()/unitMegabytes)
 	}
 }
