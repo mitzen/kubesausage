@@ -3,11 +3,11 @@ package feature
 import (
 	"fmt"
 
+	"github.com/fatih/color"
+	"github.com/mitzen/kubeconfig/config"
 	"github.com/mitzen/kubesausage/pkg/kube/util"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
-
-	"github.com/mitzen/kubeconfig/config"
 )
 
 type ClusterManager struct {
@@ -19,11 +19,33 @@ const (
 	unitMegabytes int64 = 1000000
 )
 
+func (i *ClusterManager) PrepareClusterDrain() {
+
+	cfg := config.ClientConfig{}
+	restConfig := cfg.NewRestConfig()
+	clientset := cfg.NewClientSet(restConfig)
+
+	nsutil := util.KubeObject{}
+	nsutil.NewKubeObject(clientset)
+	nodes, err := nsutil.ListAllNodes()
+
+	if err != nil {
+		fmt.Printf("Unable get nodes info.")
+	}
+
+	for _, node := range nodes.Items {
+		color.Red(node.Name)
+	}
+}
+
 // Get cluster cpu / memory configuration
 // Get pods memory and cpu request and limits
 // Total it all up
 
-func (i *ClusterManager) Execute() {
+func (i *ClusterManager) GetNodeResourceLimits() {
+
+	infoColor := color.New(color.FgHiYellow)
+	podInfoColor := color.New(color.FgGreen)
 
 	cfg := config.ClientConfig{}
 	restConfig := cfg.NewRestConfig()
@@ -35,19 +57,21 @@ func (i *ClusterManager) Execute() {
 	nodes, err := nsutil.ListAllNodes()
 
 	if err != nil {
-		fmt.Printf("Unable get nodes info.")
+		color.Red("Unable get nodes info.")
 	}
 
 	for _, node := range nodes.Items {
 
-		fmt.Printf("----------------------------------------------\n")
-		fmt.Printf("Node: %s \n", node.Name)
-		fmt.Printf("Pods: %d \n", node.Status.Capacity.Storage().ToDec().Value())
+		color.White("----------------------------------------------\n")
+		infoColor.Printf("Node: %s \n", node.Name)
+		infoColor.Printf("OS: %s \n", node.Status.NodeInfo.OperatingSystem)
+		infoColor.Printf("Version: %s \n", node.Status.NodeInfo.KubeletVersion)
+		infoColor.Printf("Arch: %s \n", &node.Status.NodeInfo.Architecture)
 		fmt.Printf("----------------------------------------------\n")
 
 		pods, err := nsutil.ListAllPods(apiv1.NamespaceAll)
 		if err != nil {
-			fmt.Printf("Unable get nodes info.")
+			color.Red("Unable get nodes info.")
 		}
 
 		var (
@@ -61,12 +85,8 @@ func (i *ClusterManager) Execute() {
 
 		for _, pod := range pods.Items {
 			if pod.Spec.NodeName == node.Name {
-
-				fmt.Printf("Namespace: %s \n", pod.Namespace)
-				fmt.Printf("Pod name: %s \n", pod.Name)
-
+				podInfoColor.Printf("Namespace: %s Name %s Status %s \n", pod.Namespace, pod.Name, pod.Status.Phase)
 				for _, container := range pod.Spec.Containers {
-
 					CPURequested := container.Resources.Requests.Cpu().Value()
 					MemoryRequested := container.Resources.Requests.Memory().Value()
 					CPULimit := container.Resources.Limits.Cpu().Value()
@@ -74,10 +94,16 @@ func (i *ClusterManager) Execute() {
 
 					fmt.Printf("Container Name: %s \n", container.Name)
 					fmt.Printf("Image Name: %s \n", container.Image)
-					fmt.Printf("Cpu request for container: %d \n", CPURequested)
-					fmt.Printf("Cpu limits for container: %d \n", CPULimit)
-					fmt.Printf("Memory request for container (M): %d \n", MemoryRequested/unitMegabytes)
-					fmt.Printf("Memory limits for container (M): %d \n", MemoryLimit/unitMegabytes)
+
+					if CPURequested <= 0 {
+						fmt.Printf("Cpu request for container: %d \n", CPURequested)
+						fmt.Printf("Cpu limits for container: %d \n", CPULimit)
+					}
+
+					if MemoryRequested <= 0 {
+						fmt.Printf("Memory request for container (M): %d \n", MemoryRequested/unitMegabytes)
+						fmt.Printf("Memory limits for container (M): %d \n", MemoryLimit/unitMegabytes)
+					}
 
 					totalCPURequested += CPURequested
 					totalMemoryRequested += MemoryRequested

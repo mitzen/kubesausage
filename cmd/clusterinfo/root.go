@@ -30,7 +30,10 @@ func Execute() {
 		Short: `Evit a pod from a namespace`,
 		Long:  `Evit a pod from a namespace`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("version 1.0")
+
+			// prepare eviction
+
+			fmt.Println("evict 1.0, %s", args)
 		},
 	}
 
@@ -43,7 +46,7 @@ func Execute() {
 			fmt.Printf("%s\n", informationType)
 
 			istioUpgrader := feature.ClusterManager{Cmd: cmd}
-			istioUpgrader.Execute()
+			istioUpgrader.GetNodeResourceLimits()
 		},
 	}
 
