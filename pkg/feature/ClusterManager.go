@@ -19,6 +19,12 @@ const (
 	unitMegabytes int64 = 1000000
 )
 
+var nodeInfoColor = color.New(color.FgHiYellow)
+var nodeInfoDetail = color.New(color.FgYellow)
+var podInfoColor = color.New(color.FgBlue)
+var podDetailColor = color.New(color.FgHiBlue)
+var errorColor = color.New(color.FgRed)
+
 func (i *ClusterManager) PrepareClusterDrain() {
 
 	cfg := config.ClientConfig{}
@@ -33,6 +39,12 @@ func (i *ClusterManager) PrepareClusterDrain() {
 		fmt.Printf("Unable get nodes info.")
 	}
 
+	// Examine node status to identify faulty pods
+
+	// Get deployment
+
+	// Get pdb
+
 	for _, node := range nodes.Items {
 		color.Red(node.Name)
 	}
@@ -43,9 +55,6 @@ func (i *ClusterManager) PrepareClusterDrain() {
 // Total it all up
 
 func (i *ClusterManager) GetNodeResourceLimits() {
-
-	infoColor := color.New(color.FgHiYellow)
-	podInfoColor := color.New(color.FgGreen)
 
 	cfg := config.ClientConfig{}
 	restConfig := cfg.NewRestConfig()
@@ -63,10 +72,10 @@ func (i *ClusterManager) GetNodeResourceLimits() {
 	for _, node := range nodes.Items {
 
 		color.White("----------------------------------------------\n")
-		infoColor.Printf("Node: %s \n", node.Name)
-		infoColor.Printf("OS: %s \n", node.Status.NodeInfo.OperatingSystem)
-		infoColor.Printf("Version: %s \n", node.Status.NodeInfo.KubeletVersion)
-		infoColor.Printf("Arch: %s \n", &node.Status.NodeInfo.Architecture)
+		nodeInfoColor.Printf("Node: %s \n", node.Name)
+		nodeInfoColor.Printf("OS: %s \n", node.Status.NodeInfo.OperatingSystem)
+		nodeInfoColor.Printf("Version: %s \n", node.Status.NodeInfo.KubeletVersion)
+		nodeInfoColor.Printf("Arch: %s \n", node.Status.NodeInfo.Architecture)
 		fmt.Printf("----------------------------------------------\n")
 
 		pods, err := nsutil.ListAllPods(apiv1.NamespaceAll)
@@ -85,24 +94,25 @@ func (i *ClusterManager) GetNodeResourceLimits() {
 
 		for _, pod := range pods.Items {
 			if pod.Spec.NodeName == node.Name {
-				podInfoColor.Printf("Namespace: %s Name %s Status %s \n", pod.Namespace, pod.Name, pod.Status.Phase)
+				podDetailColor.Printf("------------------------------------------------------------ \n")
+				podInfoColor.Printf("Namespace: %s Name: %s Status: %s \n", pod.Namespace, pod.Name, pod.Status.Phase)
 				for _, container := range pod.Spec.Containers {
 					CPURequested := container.Resources.Requests.Cpu().Value()
 					MemoryRequested := container.Resources.Requests.Memory().Value()
 					CPULimit := container.Resources.Limits.Cpu().Value()
 					MemoryLimit := container.Resources.Limits.Memory().Value()
 
-					fmt.Printf("Container Name: %s \n", container.Name)
-					fmt.Printf("Image Name: %s \n", container.Image)
+					podDetailColor.Printf("Container Name: %s \n", container.Name)
+					podDetailColor.Printf("Image Name: %s \n", container.Image)
 
-					if CPURequested <= 0 {
-						fmt.Printf("Cpu request for container: %d \n", CPURequested)
-						fmt.Printf("Cpu limits for container: %d \n", CPULimit)
+					if CPURequested >= 0 {
+						podDetailColor.Printf("Cpu request for container: %d \n", CPURequested)
+						podDetailColor.Printf("Cpu limits for container: %d \n", CPULimit)
 					}
 
-					if MemoryRequested <= 0 {
-						fmt.Printf("Memory request for container (M): %d \n", MemoryRequested/unitMegabytes)
-						fmt.Printf("Memory limits for container (M): %d \n", MemoryLimit/unitMegabytes)
+					if MemoryRequested >= 0 {
+						podDetailColor.Printf("Memory request for container (M): %d \n", MemoryRequested/unitMegabytes)
+						podDetailColor.Printf("Memory limits for container (M): %d \n", MemoryLimit/unitMegabytes)
 					}
 
 					totalCPURequested += CPURequested
@@ -110,6 +120,7 @@ func (i *ClusterManager) GetNodeResourceLimits() {
 					totalCPULimit += CPULimit
 					totalMemoryLimit += MemoryLimit
 				}
+				podDetailColor.Printf("------------------------------------------------------------ \n")
 			}
 		}
 

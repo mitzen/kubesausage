@@ -5,6 +5,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	po "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -31,4 +32,18 @@ func (n *KubeObject) ListDaemonset(namespace string) (*appsv1.DaemonSetList, err
 
 func (n *KubeObject) ListAllPods(namespace string) (*v1.PodList, error) {
 	return n.c.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+}
+
+func (n *KubeObject) GetPdb(namespace string) (*po.PodDisruptionBudgetList, error) {
+	return n.c.PolicyV1().PodDisruptionBudgets(namespace).List(context.TODO(), metav1.ListOptions{})
+}
+
+func (n *KubeObject) EvictPod(podName string, namespace string) error {
+	eviction := po.Eviction{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      podName,
+			Namespace: namespace,
+		},
+		DeleteOptions: &metav1.DeleteOptions{}}
+	return n.c.PolicyV1().Evictions(namespace).Evict(context.TODO(), &eviction)
 }
