@@ -34,6 +34,16 @@ func (n *KubeObject) ListAllPods(namespace string) (*v1.PodList, error) {
 	return n.c.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 }
 
+func (n *KubeObject) ListAllPodsByLabel(namespace string, label string) (*v1.PodList, error) {
+	return n.c.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: label,
+	})
+}
+
+func (n *KubeObject) ListAllDeployment(namespace string) (*appsv1.DeploymentList, error) {
+	return n.c.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
+}
+
 func (n *KubeObject) GetPdb(namespace string) (*po.PodDisruptionBudgetList, error) {
 	return n.c.PolicyV1().PodDisruptionBudgets(namespace).List(context.TODO(), metav1.ListOptions{})
 }

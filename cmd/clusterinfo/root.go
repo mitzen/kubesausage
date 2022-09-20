@@ -32,8 +32,19 @@ func Execute() {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			// prepare eviction
-
 			fmt.Println("evict 1.0, %s", args)
+		},
+	}
+
+	var prepareUpgradeCmd = &cobra.Command{
+		Use:   `prepupgrade`,
+		Short: `Prepare upgrade`,
+		Long:  `Prepare upgrade`,
+		Run: func(cmd *cobra.Command, args []string) {
+
+			fmt.Println("prepare upgrade %s", args)
+			istioUpgrader := feature.ClusterManager{Cmd: cmd}
+			istioUpgrader.PrepareUpgrade()
 		},
 	}
 
@@ -44,7 +55,6 @@ func Execute() {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			fmt.Printf("%s\n", informationType)
-
 			istioUpgrader := feature.ClusterManager{Cmd: cmd}
 			istioUpgrader.GetNodeResourceLimits()
 		},
@@ -55,6 +65,7 @@ func Execute() {
 
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(evictCmd)
+	rootCmd.AddCommand(prepareUpgradeCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

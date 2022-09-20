@@ -25,29 +25,19 @@ var podInfoColor = color.New(color.FgBlue)
 var podDetailColor = color.New(color.FgHiBlue)
 var errorColor = color.New(color.FgRed)
 
-func (i *ClusterManager) PrepareClusterDrain() {
+func (i *ClusterManager) PrepareUpgrade() {
 
 	cfg := config.ClientConfig{}
 	restConfig := cfg.NewRestConfig()
 	clientset := cfg.NewClientSet(restConfig)
-
 	nsutil := util.KubeObject{}
+
 	nsutil.NewKubeObject(clientset)
-	nodes, err := nsutil.ListAllNodes()
-
-	if err != nil {
-		fmt.Printf("Unable get nodes info.")
+	nodedrainer := NodeDrainer{
+		nsutil: nsutil,
 	}
 
-	// Examine node status to identify faulty pods
-
-	// Get deployment
-
-	// Get pdb
-
-	for _, node := range nodes.Items {
-		color.Red(node.Name)
-	}
+	nodedrainer.AssessDeploymentReadiness()
 }
 
 // Get cluster cpu / memory configuration

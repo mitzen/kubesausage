@@ -72,7 +72,6 @@ func (i *IstioClient) GetIstioPod(namespace string) string {
 			}
 		}
 	}
-
 	return ""
 }
 
